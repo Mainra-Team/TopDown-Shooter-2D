@@ -1,9 +1,10 @@
+using System;
 using UnityEngine;
 
 public class BulletController : MonoBehaviour
 {
     public float speed = 10f;
-    public int damage = 10;
+    private int damage = 10;
 
     private void Start()
     {
@@ -26,7 +27,7 @@ public class BulletController : MonoBehaviour
         if (other.CompareTag("Enemy"))
         {
             // Dapatkan komponen Health dari objek yang tertabrak
-            EnemyHealth enemyHealth = other.GetComponent<EnemyHealth>();
+            Enemy enemyHealth = other.GetComponent<Enemy>();
 
             // Jika objek memiliki komponen EnemyHealth, berikan damage ke musuh
             if (enemyHealth != null)
@@ -37,5 +38,13 @@ public class BulletController : MonoBehaviour
             // Hancurkan proyektil setelah menyentuh musuh
             Destroy(gameObject);
         }
+        else if (other.CompareTag("Obstacle"))
+        {
+            Destroy(gameObject);
+        }
+    }
+    public void SetDamage(int newDamage)
+    {
+        damage = newDamage;
     }
 }

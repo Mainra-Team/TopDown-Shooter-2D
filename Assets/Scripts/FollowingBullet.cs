@@ -7,28 +7,29 @@ public class FollowingBullet : MonoBehaviour
     public float rotationSpeed = 200f;
     public float disappearDelay = 5f; // Waktu sebelum peluru menghilang
 
-    private Transform player;
+    private Transform targetEnemy;
 
     private void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Enemy").transform;
+        FindNearestEnemy();
         Invoke("Disappear", disappearDelay);
     }
 
     private void Update()
     {
-        FollowPlayer();
+        if (targetEnemy != null)
+        {
+            FollowTarget();
+        }
+        else
+        {
+            FindNearestEnemy();
+        }
     }
 
-    private void FollowPlayer()
+    private void FollowTarget()
     {
-        if (player == null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Vector3 direction = player.position - transform.position;
+        Vector3 direction = targetEnemy.position - transform.position;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.forward);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, rotation, rotationSpeed * Time.deltaTime);
@@ -36,20 +37,35 @@ public class FollowingBullet : MonoBehaviour
         transform.Translate(Vector3.right * speed * Time.deltaTime);
     }
 
+    private void FindNearestEnemy()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        float closestDistance = Mathf.Infinity;
+
+        foreach (GameObject enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                targetEnemy = enemy.transform;
+            }
+        }
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy"))
         {
             // Logika untuk menangani dampak peluru ke pemain
-            other.GetComponent<BulletDamage>().SetDamage(damage);
+            other.GetComponent<Enemy>().TakeDamage(damage);
+            DestroyBullet();
         }
         else if (other.CompareTag("Obstacle"))
         {
             // Logika untuk menangani dampak peluru ke hambatan atau objek lain
+            DestroyBullet();
         }
-
-        // Hancurkan bullet setelah menyentuh objek apapun
-        DestroyBullet();
     }
 
     private void Disappear()
