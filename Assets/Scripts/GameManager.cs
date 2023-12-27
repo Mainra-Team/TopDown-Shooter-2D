@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,7 +10,8 @@ public class GameManager : MonoBehaviour
     public GameObject gameOverPanel;
     public GameObject pausePanel;
     [SerializeField] GameObject howToPlayPanel;
-
+    public TextMeshProUGUI timerText;
+    private float startTime;
     private bool isPaused = false;
 
     private void Awake()
@@ -26,6 +28,7 @@ public class GameManager : MonoBehaviour
     }
     void Start()
     {
+        startTime = Time.time;
         if (howToPlayPanel != null)
         {
             howToPlayPanel.SetActive(true);
@@ -35,6 +38,8 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        UpdateTimer();
+
         // Mengaktifkan/dememaktifkan panel pause saat tombol Pause di tekan
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -75,9 +80,6 @@ public class GameManager : MonoBehaviour
     {
         // Mereload scene saat ini (scene utama)
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-
-        // Waktu dilanjutkan (opsional)
-        Time.timeScale = 1;
     }
 
     public void PauseGame()
@@ -106,5 +108,29 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1;
 
         isPaused = false;
+    }
+
+    private void UpdateTimer()
+    {
+        // Hitung selisih waktu dari waktu awal hingga sekarang
+        float currentTime = Time.time - startTime;
+
+        // Menghitung menit dan detik
+        int minutes = Mathf.FloorToInt(currentTime / 60f);
+        int seconds = Mathf.FloorToInt(currentTime % 60f);
+
+        // Format waktu menjadi "00:00"
+        string timerString = string.Format("{0:00}:{1:00}", minutes, seconds);
+
+        // Menetapkan teks pada TextMeshPro
+        if (timerText != null)
+        {
+            timerText.text = timerString;
+        }
+    }
+
+    private void ResetTimer()
+    {
+        startTime = Time.time;
     }
 }
