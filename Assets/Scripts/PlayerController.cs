@@ -3,24 +3,30 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    public int maxHealth = 100;
     public float speed = 5f;
     public float rotationSpeed = 200f;
     public float shootCooldown = 0.5f;
     public GameObject bulletPrefabNormal;
-    public GameObject bulletPrefabTripleShot;
-    public GameObject bulletPrefabBurst;
+    public GameObject bulletPrefabUltimate;
     public Transform bulletSpawnPoint;
+    public int bulletTotal;
     public Transform weapon;
-    public int maxHealth = 100;
+
+    private AudioSource shootingAudioSource; // Komponen AudioSource untuk efek suara tembakan
+    public AudioClip normalShotClip;       // AudioClip untuk tembakan normal
+    public AudioClip ultimateShotClip;     // AudioClip untuk tembakan ultimate
 
     private int currentHealth;
     private float shootTimer;
 
     public Slider healthSlider;
+    private Animator playerAnimator;
 
     private void Start()
     {
         currentHealth = maxHealth;
+        bulletTotal = 1;
 
         // Set nilai awal slider sesuai dengan maxHealth
         if (healthSlider != null)
@@ -28,6 +34,11 @@ public class PlayerController : MonoBehaviour
             healthSlider.maxValue = maxHealth;
             healthSlider.value = currentHealth;
         }
+
+        // Mendapatkan komponen Animator dari GameObject
+        playerAnimator = GetComponent<Animator>();
+        // Mendapatkan komponen AudioSource
+        shootingAudioSource = GetComponent<AudioSource>();
     }
 
     private void Update()
@@ -44,6 +55,11 @@ public class PlayerController : MonoBehaviour
 
         Vector3 movement = new Vector3(horizontalInput, verticalInput, 0f).normalized * speed * Time.deltaTime;
         transform.Translate(movement);
+
+        // Set nilai variabel animator berdasarkan arah gerakan
+        playerAnimator.SetBool("Idle", horizontalInput == 0);
+        playerAnimator.SetFloat("HorizontalInput", horizontalInput);
+        playerAnimator.SetFloat("VerticalInput", verticalInput);
     }
 
     private void RotateWeapon()
@@ -67,38 +83,57 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1) && shootTimer >= shootCooldown)
         {
-            ShootMultiple();
+            ShootUltimate();
             shootTimer = 0f;
         }
+    }
 
-        if (Input.GetKeyDown(KeyCode.Q) && shootTimer >= shootCooldown)
-        {
-            ShootBurst();
-            shootTimer = 0f;
-        }
+    public void IncreaseBulletTotal(int value)
+    {
+        bulletTotal += value;
+    }
+
+    public void IncreaseHealth(int value)
+    {
+        currentHealth = Mathf.Clamp(currentHealth + value, 0, maxHealth);
+        healthSlider.value = currentHealth;
     }
 
     private void ShootNormal()
     {
-        Instantiate(bulletPrefabNormal, bulletSpawnPoint.position, weapon.rotation);
-    }
-
-    private void ShootMultiple()
-    {
-        for (int i = 0; i < 3; i++)
+        // Memutar efek suara tembakan normal
+        if (shootingAudioSource != null && normalShotClip != null)
         {
-            Quaternion spreadRotation = Quaternion.Euler(0f, 0f, i * 15f - 15f);
-            Instantiate(bulletPrefabTripleShot, bulletSpawnPoint.position, weapon.rotation * spreadRotation);
+            shootingAudioSource.clip = normalShotClip;
+            shootingAudioSource.Play();
+        }
+        for (int i = 0; i < bulletTotal; i++)
+        {
+            // Perhitungan sudut spread berpusat pada kursor
+            float spreadAngle = (i - (bulletTotal - 1) / 2f) * 15;
+
+            // Quaternion untuk rotasi tembakan
+            Quaternion spreadRotation = Quaternion.Euler(0f, 0f, spreadAngle);
+
+            // Instantiate tembakan
+            Instantiate(bulletPrefabNormal, bulletSpawnPoint.position, weapon.rotation * spreadRotation);
         }
     }
 
-    private void ShootBurst()
+    private void ShootUltimate()
     {
-        Instantiate(bulletPrefabBurst, bulletSpawnPoint.position, weapon.rotation);
+        // Memutar efek suara tembakan ultimate
+        if (shootingAudioSource != null && ultimateShotClip != null)
+        {
+            shootingAudioSource.clip = ultimateShotClip;
+            shootingAudioSource.Play();
+        }
+
+        Instantiate(bulletPrefabUltimate, bulletSpawnPoint.position, weapon.rotation);
     }
 
     // Fungsi untuk dipanggil oleh slider untuk menyinkronkan nilai health
-    private void SetHealthFromSlider(float newHealth)
+    public void SetHealthFromSlider(float newHealth)
     {
         // Pastikan bahwa nilai health yang diatur tidak lebih besar dari maxHealth atau lebih kecil dari 0
         currentHealth = Mathf.Clamp((int)newHealth, 0, maxHealth);
@@ -113,10 +148,7 @@ public class PlayerController : MonoBehaviour
     // Fungsi untuk mengurangi health saat terkena serangan
     public void TakeDamage(int damage)
     {
-        currentHealth -= damage;
-
-        // Pastikan bahwa nilai health tidak lebih kecil dari 0
-        currentHealth = Mathf.Max(currentHealth, 0);
+        currentHealth = Mathf.Max(currentHealth - damage, 0);
 
         // Set nilai slider sesuai dengan nilai health yang baru
         if (healthSlider != null)
@@ -134,6 +166,6 @@ public class PlayerController : MonoBehaviour
     private void Die()
     {
         Debug.Log("Player has died!");
-        Time.timeScale = 0;
+        GameManager.instance.GameOver();
     }
 }

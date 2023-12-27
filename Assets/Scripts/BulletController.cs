@@ -4,11 +4,12 @@ using UnityEngine;
 public class BulletController : MonoBehaviour
 {
     public float speed = 10f;
-    private int damage = 10;
+    [SerializeField] int damage = 10;
+    public float disappearDelay = 5f;
 
     private void Start()
     {
-        Destroy(gameObject, 5f); // Hancurkan proyektil setelah 5 detik
+        Destroy(gameObject, disappearDelay); // Hancurkan proyektil setelah 5 detik
     }
 
     private void Update()
@@ -43,8 +44,8 @@ public class BulletController : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    public void SetDamage(int newDamage)
+    public void DestroyBullet(float time)
     {
-        damage = newDamage;
+        Destroy(gameObject, time);
     }
 }
